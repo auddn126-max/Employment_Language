@@ -78,9 +78,12 @@ bool is_korean(unsigned char c) // 한글은 UTF-8로 표현되고 첫바이트�
     }
 }
 void tokenize(char *idx, struct token *tp);
+bool value_check(int n);
+bool op_check(int n);
 
 token tarray[30] = {0};
-char *source = "연봉최고 연봉은 = 500 + 1 + n++;";
+char *source = "500 + 1 1 + n;";
+int check_num = 0;
 
 int main(void)
 {
@@ -97,6 +100,8 @@ int main(void)
         printf("%s(%s)\n", token_name(tp->token_type), tp->array);
         tp++;
     }
+
+    printf("***%d***\n", value_check(check_num));
 
     return 0;
 }
@@ -278,5 +283,66 @@ void tokenize(char *idx, token *tp) // 소스코드 읽어서 Tokenize후 구조
             tp->is_notempty = 1;
             tp++;
         }
+    }
+}
+
+bool value_check(int n)
+{
+    if (n > 999) // 혹시라도 종료가 안되어서 토큰 999개가 넘어갔을때를 대비한 임시 종료장치
+    {
+        return false;
+    }
+
+    else if (tarray[n].token_type == unavailable || tarray[n].token_type == Blank)
+    {
+        return value_check(n + 1); // 현재 토큰이 미지원기능이거나 공백토큰이라면 다음 인덱스로 재귀호출헤주기
+    }
+
+    else if (tarray[n + 1].token_type == Semicol && (tarray[n].token_type == Korean || tarray[n].token_type == English || tarray[n].token_type == Num))
+    {
+        return true; // tarray 다음 토큰이 세미콜론이고 현재 tarray토큰은 한글 ,숫자 ,영어면 문법상 말이 된다.
+    }
+
+    else if (tarray[n].token_type == Korean || tarray[n].token_type == English || tarray[n].token_type == Num)
+    {
+        return op_check(n + 1); // 다음토큰이 세미콜론이 아니고 현재 토큰은 value일때 다음 자리에 연산자토큰이 와야함으로 op_check함수 호출
+    }
+
+    else
+    {
+        return false; // 문법상 맞지 않는 토큰임으로 false처리
+    }
+}
+
+bool op_check(int n)
+{
+    if (n > 999)
+    {
+        return false;
+    }
+
+    else if (tarray[n].token_type == unavailable || tarray[n].token_type == Blank)
+    {
+        return op_check(n + 1); // 현재 토큰이 미지원기능이거나 공백토큰이라면 다음 인덱스로 재귀호출헤주기
+    }
+
+    else if (tarray[n].token_type == unary && tarray[n + 1].token_type == Semicol)
+    {
+        return true; // 단항연산 다음 세미콜론이 오는건 문법상 괜찮다.
+    }
+
+    else if (tarray[n + 1].token_type == Semicol)
+    {
+        return false; // 이항연산자 다음에 세미콜론이 오면 CFG가 성립이 안된다.
+    }
+
+    else if (tarray[n].token_type == binary || tarray[n].token_type == equal)
+    {
+        return value_check(n + 1);
+    }
+
+    else
+    {
+        return false;
     }
 }
