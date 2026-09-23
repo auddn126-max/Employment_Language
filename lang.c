@@ -66,6 +66,7 @@ typedef struct token // 토큰 하나하나가 될 구조체 선언
     int token_type;
     int is_notempty;
 } token;
+
 bool is_korean(unsigned char c) // 한글은 UTF-8로 표현되고 첫바이트의 값이 16진수로 0xE0 ~ 0xEF 사이이다
 {                               // signed char은 표현 가능한 범위가 작아 음수로 넘어가게 된다
     if (c >= 0xE0 && c <= 0xEF)
@@ -77,13 +78,19 @@ bool is_korean(unsigned char c) // 한글은 UTF-8로 표현되고 첫바이트�
         return false;
     }
 }
+
 void tokenize(char *idx, struct token *tp);
+
+bool statement_check(struct token *tp);
+
 bool value_check(int n);
+
 bool op_check(int n);
 
+token *blank_cal(struct token *tp);
+
 token tarray[30] = {0};
-char *source = "500 + 1 1 + n;";
-int check_num = 0;
+char *source = "연봉 최고 = 500 + 300;";
 
 int main(void)
 {
@@ -101,7 +108,7 @@ int main(void)
         tp++;
     }
 
-    printf("***%d***\n", value_check(check_num));
+    printf("***%d***\n", statement_check(tarray));
 
     return 0;
 }
@@ -167,10 +174,9 @@ void tokenize(char *idx, token *tp) // 소스코드 읽어서 Tokenize후 구조
         else if (isspace(*idx))
         {
             start = idx;
-            while (isspace(*idx))
-            {
-                idx++;
-            }
+
+            idx++;
+
             len = idx - start;
 
             strncpy(tp->array, start, len);
@@ -286,7 +292,86 @@ void tokenize(char *idx, token *tp) // 소스코드 읽어서 Tokenize후 구조
     }
 }
 
-bool value_check(int n)
+bool statement_check(token *tp) // 소스코드가 CFG에 적합한지 확인하는 함수.
+{
+
+    if (strcmp(tp->array, "연봉") != 0) // 현재 기능은 "연봉" 즉 int 자료형만 가능하다.
+    {
+        printf("변수타입이 맞지 않습니다.\n");
+        return false;
+    }
+
+    tp++; // 자료형 토큰을 확인했으니 다음 토큰으로 이동시켜주기
+
+    tp = blank_cal(tp); // 공백이 있다면 찾아서 건너 뛰는 함수.
+    if (tp == NULL)
+    {
+        return false; // blank_cal 함수가 NULL을 반환했다는건 공백이 10개 이상이라는 의미
+    }
+
+    if (tp->token_type != Korean && tp->token_type != English)
+    {
+        printf("변수명으로 올바른 형식이 아닙니다\n");
+        return false;
+    }
+
+    tp++;
+
+    tp = blank_cal(tp);
+    if (tp == NULL)
+    {
+        return false;
+    }
+
+    if (tp->token_type != equal)
+    {
+        printf("변수명 다음으론 대입연산자가 들어와야 합니다.\n");
+        return false;
+    }
+
+    tp++;
+
+    tp = blank_cal(tp);
+    if (tp == NULL)
+    {
+        return false;
+    }
+
+    int check_num = tp - tarray;          // 현재 tp의 위치와 taaray의 시작주소를 빼주면 몇칸 이동했는지 알 수 있다.
+    bool result = value_check(check_num); // value_check는 배열의 index번호를 보내줘야 한다.
+
+    if (result == true)
+    {
+        printf("Correct\n");
+        return true;
+    }
+    else
+    {
+        printf("수식이 맞지 않습니다\n");
+        return false;
+    }
+}
+
+token *blank_cal(token *tp) // 토큰의 위치를 받아 공백을 count면서 뛰어 넘는 함수.
+{
+    int blank_num = 0;
+
+    while (tp->token_type == Blank)
+    {
+        tp++;
+        blank_num++;
+
+        if (blank_num > 10)
+        {
+            printf("공백이 너무 많습니다.\n");
+            return NULL;
+        }
+    }
+
+    return tp;
+}
+
+bool value_check(int n) // 현재 토큰이 value일때 처리하는 함수
 {
     if (n > 999) // 혹시라도 종료가 안되어서 토큰 999개가 넘어갔을때를 대비한 임시 종료장치
     {
@@ -314,7 +399,7 @@ bool value_check(int n)
     }
 }
 
-bool op_check(int n)
+bool op_check(int n) // 현재 토큰이 오퍼레이터 일떄 처리하는 함수.
 {
     if (n > 999)
     {
