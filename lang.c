@@ -12,13 +12,16 @@
 
 enum tk // 열거형
 {
+    Add = -20,
+    Subtrack = -21,
+    Times = -22,
+    Divide = -23,
     Semicol = -10,
     Korean = -9,
     English = -8,
     Num = -7,
     Blank = -6,
     unary = -5,
-    binary = -4,
     equal = -3,
     unavailable = -2
 };
@@ -53,6 +56,18 @@ const char *token_name(int n) // token구조체 안에있는 token_type을 다�
         break;
     case Semicol:
         return "세미콜론토큰\n";
+        break;
+    case Add:
+        return "덧셈토큰\n";
+        break;
+    case Subtrack:
+        return "뺄셈토큰\n";
+        break;
+    case Times:
+        return "곱셈토큰\n";
+        break;
+    case Divide:
+        return "나눗셈토큰\n";
         break;
 
     default:
@@ -90,7 +105,7 @@ bool op_check(int n);
 token *blank_cal(struct token *tp);
 
 token tarray[30] = {0};
-char *source = "연봉 최고 = 500 + 300;";
+char *source = "연봉 최고 = 500 * 300 / 10 + 5;";
 
 int main(void)
 {
@@ -100,7 +115,7 @@ int main(void)
 
     tokenize(idx, tarray);
 
-    token *tp = tarray; // main함수에서 tarray++같은 포인터연산을 불가능하니 구조체 포인터 하나 선언해준다.
+    token *tp = tarray; // main함수에서 tarray++연산은 위험하니 포인터를 따로 선언해준다.
 
     while (tp->is_notempty == true) // 구조체배열들중 토큰이 들어있는것들만 반복.
     {
@@ -209,7 +224,7 @@ void tokenize(char *idx, token *tp) // 소스코드 읽어서 Tokenize후 구조
 
                 strncpy(tp->array, start, len);
                 tp->array[len] = '\0';
-                tp->token_type = binary;
+                tp->token_type = Add;
                 tp->is_notempty = 1;
                 tp++;
             }
@@ -239,10 +254,40 @@ void tokenize(char *idx, token *tp) // 소스코드 읽어서 Tokenize후 구조
 
                 strncpy(tp->array, start, len);
                 tp->array[len] = '\0';
-                tp->token_type = binary;
+                tp->token_type = Subtrack;
                 tp->is_notempty = 1;
                 tp++;
             }
+        }
+
+        else if (*idx == '*')
+        {
+            start = idx;
+
+            idx++;
+
+            len = idx - start;
+
+            strncpy(tp->array, start, len);
+            tp->array[len] = '\0';
+            tp->token_type = Times;
+            tp->is_notempty = 1;
+            tp++;
+        }
+
+        else if (*idx == '/')
+        {
+            start = idx;
+
+            idx++;
+
+            len = idx - start;
+
+            strncpy(tp->array, start, len);
+            tp->array[len] = '\0';
+            tp->token_type = Divide;
+            tp->is_notempty = 1;
+            tp++;
         }
 
         else if (*idx == '=')
@@ -352,7 +397,7 @@ bool statement_check(token *tp) // 소스코드가 CFG에 적합한지 확인하
     }
 }
 
-token *blank_cal(token *tp) // 토큰의 위치를 받아 공백을 count면서 뛰어 넘는 함수.
+token *blank_cal(token *tp) // 토큰의 위치를 받아 공백을 count하면서 뛰어 넘는 함수.
 {
     int blank_num = 0;
 
@@ -421,8 +466,8 @@ bool op_check(int n) // 현재 토큰이 오퍼레이터 일떄 처리하는 함
         return false; // 이항연산자 다음에 세미콜론이 오면 CFG가 성립이 안된다.
     }
 
-    else if (tarray[n].token_type == binary || tarray[n].token_type == equal)
-    {
+    else if (tarray[n].token_type == Add || tarray[n].token_type == Subtrack || tarray[n].token_type == Times || tarray[n].token_type == Divide || tarray[n].token_type == equal)
+    { // 덧셈 ,뺼셈 ,곱셈 ,나눗셈 ,대입연산자라면 문법상 맞는 토큰이므로 value_check를 위해 함수 호출
         return value_check(n + 1);
     }
 
