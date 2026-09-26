@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 
-enum tk // 열거형
+enum tokne_id // 열거형
 {
     Add = -20,
     Subtrack = -21,
@@ -24,6 +24,14 @@ enum tk // 열거형
     unary = -5,
     equal = -3,
     unavailable = -2
+};
+
+enum node_type
+{
+    Node_num = -99,
+    Node_iden = -98,
+    Node_op = -97,
+    Node_assign = -96
 };
 
 const char *token_name(int n) // token구조체 안에있는 token_type을 다시 문자열로 변환해서 반환해주는 함수
@@ -77,10 +85,19 @@ const char *token_name(int n) // token구조체 안에있는 token_type을 다�
 
 typedef struct token // 토큰 하나하나가 될 구조체 선언
 {
-    char array[30];
+    char array[30]; // 토큰의 값
     int token_type;
-    int is_notempty;
+    int is_notempty; // 토큰이 유효하다는 flag
 } token;
+
+typedef struct ASTnode
+{
+    int node_type; // 노드의 종류 ex) 글자 ,숫자 ,연산자
+    char array[30];
+    struct ASTnode *leftnode;
+    struct ASTnode *rightnode;
+
+} ASTnode;
 
 bool is_korean(unsigned char c) // 한글은 UTF-8로 표현되고 첫바이트의 값이 16진수로 0xE0 ~ 0xEF 사이이다
 {                               // signed char은 표현 가능한 범위가 작아 음수로 넘어가게 된다
