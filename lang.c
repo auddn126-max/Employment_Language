@@ -9,6 +9,7 @@
 #include <semaphore.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include <time.h>
 
 enum tokne_id // 열거형
 {
@@ -118,6 +119,8 @@ bool statement_check(struct token *tp);
 bool value_check(int n);
 
 bool op_check(int n);
+
+void creat_AST(int type, char *c);
 
 token *blank_cal(struct token *tp);
 
@@ -462,6 +465,7 @@ bool value_check(int n) // 현재 토큰이 value일때 처리하는 함수
 }
 
 bool op_check(int n) // 현재 토큰이 오퍼레이터 일떄 처리하는 함수.
+
 {
     if (n > 999)
     {
@@ -492,4 +496,14 @@ bool op_check(int n) // 현재 토큰이 오퍼레이터 일떄 처리하는 함
     {
         return false;
     }
+}
+
+void creat_AST(int type, char *c)
+{
+    ASTnode *newnode;
+
+    newnode = (ASTnode *)malloc(sizeof(ASTnode));
+
+    newnode->node_type = type;
+    strcpy(newnode->array, *c);
 }
